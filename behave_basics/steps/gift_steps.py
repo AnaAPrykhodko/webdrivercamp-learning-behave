@@ -1,14 +1,12 @@
 from behave import *
+from behave.model import Table, Row
 from time import sleep
 from decimal import Decimal
-
 
 
 @step('Navigate to {url}')
 def step_impl(context, url):
     context.browser.get(url)
-
-
 
 
 @step('Search for {search_item}')
@@ -37,20 +35,25 @@ def step_impl(context, var, level=None):
         context.browser.execute_script("window.scrollBy(0, 2000)")
 
     elements = context.helper.find_all_elements(locator)
+    table = Table(["price"])
+    for element in elements:
+        head, sep, tail = element.text.strip('$ ').partition('-')
+        current_price = head
+        row = Row(["price"], [current_price])
+        table.add_row(row)
     if level == "feature":
-        setattr(context.feature, var, elements)
+        setattr(context.feature, var, table)
     else:
-        setattr(context, var, elements)
-
+        setattr(context, var, table)
 
 
 @step('Verify all collected results\' {param} is {condition}')
 def step_impl(context, param, condition):
     correct_price = Decimal(condition[1:])
-    for element in context.feature.elements:
-        head, sep, tail = element.text.strip('$ ').partition('-')
-        current_price = float(head)
-        if Decimal(current_price) >= correct_price:
+    for row in context.collected_items:
+        current_price = float(row[param])
+        print(f"!!!!!!!{current_price}")
+        if current_price >= correct_price:
             return False
 
 
